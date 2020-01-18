@@ -61,6 +61,7 @@ History:
  0.31   Added main loop error handling improvement and reboot image fix (Nigel 23/12/2019)
  0.32   Minor menu updates to network info menu & tests now run when no def gw (Jiri 26/12/2019)
  0.33   Secondary addr on USB causing 2 IP addr on home page - added head command to fix (Nigel 26/12/2019) 
+ 0.34   Speedtest added by Jiri & added disable_keys global var to ignore key presses when required. Also tidied up lots of syntax issues reported by pylint & removed old menu code.
 
 To do:
     1. Error handling to log?
@@ -83,7 +84,7 @@ import types
 import re
 from textwrap import wrap
 
-__version__ = "0.32 (beta)"
+__version__ = "0.34 (beta)"
 __author__  = "wifinigel@gmail.com"
 
 ############################
@@ -127,13 +128,13 @@ reboot_image = Image.open('reboot.png').convert('1')
 #######################
 # Define display fonts
 #######################
-smartFont = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 10);
-font11    = ImageFont.truetype('DejaVuSansMono.ttf', 11);
-font12    = ImageFont.truetype('DejaVuSansMono.ttf', 12);
-fontb12   = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 12);
-font14    = ImageFont.truetype('DejaVuSansMono.ttf', 14);
-fontb14   = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 14);
-fontb24   = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 24);
+smartFont = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 10)
+font11    = ImageFont.truetype('DejaVuSansMono.ttf', 11)
+font12    = ImageFont.truetype('DejaVuSansMono.ttf', 12)
+fontb12   = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 12)
+font14    = ImageFont.truetype('DejaVuSansMono.ttf', 14)
+fontb14   = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 14)
+fontb24   = ImageFont.truetype('DejaVuSansMono-Bold.ttf', 24)
 
 #######################################
 # Initialize various global variables
@@ -151,6 +152,7 @@ table_list_length = 0         # Total length of currently displayed table
 result_cache = False          # used to cache results when paging info
 display_state = 'page'        # current display state: 'page' or 'menu'
 start_up = True               # True if in initial (home page) start-up state
+disable_keys = False          # Set to true when need to ignore key presses
 
 #######################################
 # Initialize file variables
@@ -656,6 +658,7 @@ def show_summary():
     global draw
     global oled
     global display_state
+    global drawing_in_progress
     
     # The commands here take quite a while to execute, so lock screen early
     # (normally done by page drawing function)
@@ -722,6 +725,7 @@ def show_date():
     global draw
     global oled
     global display_state
+    global drawing_in_progress
     
     drawing_in_progress = True
     
@@ -759,7 +763,7 @@ def show_interfaces():
     try:
         ifconfig_info = subprocess.check_output(ifconfig_file, shell=True)
     except Exception as ex:
-        interfaces= [ "Err: ifconfig error" ]
+        interfaces= [ "Err: ifconfig error", str(ex) ]
         display_simple_table(interfaces, back_button_req=1)
         return
 
@@ -817,7 +821,7 @@ def show_wlan_interfaces():
     try:
         ifconfig_info = subprocess.check_output('{} -s'.format(ifconfig_file), shell=True)
     except Exception as ex:
-        interfaces= [ "Err: ifconfig error" ]
+        interfaces= [ "Err: ifconfig error", str(ex) ]
         display_simple_table(interfaces, back_button_req=1)
         return
 
@@ -915,7 +919,7 @@ def show_usb():
         lsusb_info = lsusb_output.split('\n')
     except Exception as ex:
         error_descr = "Issue getting usb info using lsusb command"
-        interfaces= [ "Err: lsusb error" ]
+        interfaces= [ "Err: lsusb error", str(ex) ]
         display_simple_table(interfaces, back_button_req=1)
         return
         
@@ -967,7 +971,7 @@ def show_ufw():
             result_cache = ufw_info # cache results
         except Exception as ex:
             error_descr = "Issue getting ufw info using ufw command"
-            interfaces= [ "Err: ufw error" ]
+            interfaces= [ "Err: ufw error", error_descr, str(ex) ]
             display_simple_table(interfaces, back_button_req=1)
             return
     else:
@@ -1236,8 +1240,12 @@ def show_speedtest():
     Run speedtest.net speed test and format output to fit the OLED screen
     '''
     global display_state
+    global disable_keys
 
-    display_dialog_msg('Running Speedtest...', back_button_req=1)
+    # ignore any more key presses as this could cause us issues
+    disable_keys = True
+
+    display_dialog_msg('Running Speedtest. This may take a minute or two.', back_button_req=0)
 
     speedtest_info = []
     speedtest_cmd = "speedtest | egrep -w \"Testing from|Download|Upload\" | sed 's/Testing from /My IP: /g; s/\.\.\.//g; s/Download/D/g; s/Upload/U/g; s/(//g; s/)//g; s/bit\/s/bps/g'"
@@ -1266,6 +1274,9 @@ def show_speedtest():
     # final check no-one pressed a button before we render page
     if display_state == 'menu':
         return
+    
+    #re-enable front panel keys
+    disable_keys = False
 
     display_simple_table(choppedoutput, back_button_req=1, title='--Speedtest--')
     time.sleep(300)
@@ -1464,13 +1475,13 @@ def kismet_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output("{} {}".format(kismet_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Status failed!'.format(ex)
+            dialog_msg = 'Status failed! {}'.format(ex)
         
     elif action=="start":
         try:
             dialog_msg = subprocess.check_output("{} {}".format(kismet_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Start failed!'.format(ex)
+            dialog_msg = 'Start failed! {}'.format(ex)
     
     elif action=="stop":
         try:
@@ -1514,19 +1525,19 @@ def bettercap_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output("{} {}".format(bettercap_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Status failed!'.format(ex)
+            dialog_msg = 'Status failed! {}'.format(ex)
         
     elif action=="start":
         try:
             dialog_msg = subprocess.check_output("{} {}".format(bettercap_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Start failed!'.format(ex)
+            dialog_msg = 'Start failed! {}'.format(ex)
     
     elif action=="stop":
         try:
             dialog_msg = subprocess.check_output("{} {}".format(bettercap_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Stop failed!'.format(ex)
+            dialog_msg = 'Stop failed! {}'.format(ex)
         
     display_dialog_msg(dialog_msg, back_button_req=1)
     display_state = 'page'
@@ -1554,7 +1565,7 @@ def profiler_ctl(action="status"):
     
     # check resource is available
     if not os.path.isfile(profiler_ctl_file):        
-        display_dialog_msg('not available'.format(profiler_ctl_file), back_button_req=1)
+        display_dialog_msg('not available: {}'.format(profiler_ctl_file), back_button_req=1)
         display_state = 'page'
         return
 
@@ -1574,25 +1585,25 @@ def profiler_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output("{} {}".format(profiler_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Start failed!'.format(ex)
+            dialog_msg = 'Start failed! {}'.format(ex)
             
     elif action=="start_no11r":
         try:
             dialog_msg = subprocess.check_output("{} {}".format(profiler_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Start failed!'.format(ex)
+            dialog_msg = 'Start failed! {}'.format(ex)
     
     elif action=="stop":
         try:
             dialog_msg = subprocess.check_output("{} {}".format(profiler_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Stop failed!'.format(ex)
+            dialog_msg = 'Stop failed! {}'.format(ex)
             
     elif action=="purge":
         try:
             dialog_msg = subprocess.check_output("{} {}".format(profiler_ctl_file, action), shell=True)
         except Exception as ex:
-            dialog_msg = 'Report purge failed!'.format(ex)
+            dialog_msg = 'Report purge failed! {}'.format(ex)
         
     display_dialog_msg(dialog_msg, back_button_req=1)
     display_state = 'page'
@@ -1728,7 +1739,7 @@ def wifi_client_count():
 
     except Exception as ex:
         error_descr = "Issue getting number of  Wi-Fi clients"
-        wccerror= [ "Err: Wi-Fi client count" ]
+        wccerror= [ "Err: Wi-Fi client count", wcerror, str(ex) ]
         display_simple_table(wccerror, back_button_req=1)
         return
 
@@ -1927,81 +1938,6 @@ menu = [
       },
 ]
 
-'''
-Old menu structure...just in case
-menu = [
-      { "name": "1.Network", "action": [
-            { "name": "1.Interfaces", "action": show_interfaces},
-            { "name": "2.WLAN Interfaces", "action": show_wlan_interfaces},
-            { "name": "3.USB Devices", "action": show_usb},
-            { "name": "4.UFW Ports", "action": show_ufw},
-            { "name": "5.Eth0 IP Config", "action": show_eth0_ipconfig},
-            { "name": "6.Eth0 VLAN", "action": show_vlan},
-            { "name": "7.LLDP Neighbour", "action": show_lldp_neighbour},
-            { "name": "8.CDP Neighbour", "action": show_cdp_neighbour},
-            { "name": "9.WPA Passphrase", "action": show_wpa_passphrase},
-            { "name": "10.Reachability", "action": show_reachability},
-        ]
-      },
-      { "name": "2.Status", "action": [
-            { "name": "1.Summary", "action": show_summary},
-            { "name": "2.Date/Time", "action": show_date},
-            { "name": "3.Version", "action": show_menu_ver},
-        ]
-      },
-      { "name": "3.Apps", "action": [
-            { "name": "1.Kismet",   "action": [
-                { "name": "Status", "action": kismet_status},
-                { "name": "Stop", "action":   kismet_stop},
-                { "name": "Start", "action":  kismet_start},
-                ]
-            },
-            { "name": "2.Bettercap",   "action": [
-                { "name": "Status", "action": bettercap_status},
-                { "name": "Stop", "action":   bettercap_stop},
-                { "name": "Start", "action":  bettercap_start},
-                ]
-            },
-            { "name": "3.Profiler",   "action": [
-                { "name": "Status", "action":          profiler_status},
-                { "name": "Stop", "action":            profiler_stop},
-                { "name": "Start", "action":           profiler_start},
-                { "name": "Start (no 11r)", "action":  profiler_start_no11r},
-                { "name": "Purge Reports", "action":   profiler_purge},
-                ]
-            },
-        ]
-      },
-      { "name": "4.Actions", "action": [
-            { "name": "1.W-Console",   "action": [
-                { "name": "Cancel", "action": go_up},
-                { "name": "Confirm", "action": wconsole_switcher},
-                ]
-            },
-            { "name": "2.Hotspot",   "action": [
-                { "name": "Cancel", "action": go_up},
-                { "name": "Confirm", "action": hotspot_switcher},
-                ]
-            },
-            { "name": "3.Wiperf",   "action": [
-                { "name": "Cancel", "action": go_up},
-                { "name": "Confirm", "action": wiperf_switcher},
-                ]
-            },
-            { "name": "4.Reboot",   "action": [
-                { "name": "Cancel", "action": go_up},
-                { "name": "Confirm", "action": reboot},
-                ]
-            },
-            { "name": "5.Shutdown", "action": [
-                { "name": "Cancel", "action": go_up},
-                { "name": "Confirm", "action": shutdown},
-                ]
-            },
-        ]
-      }
-]
-'''
 
 # update menu options data structure if we're in non-classic mode    
 if current_mode == "wconsole":
@@ -2027,26 +1963,6 @@ if current_mode != "classic":
           }
     
     menu.pop(3)
-'''
-Old menu
-
-if current_mode != "classic":
-    menu[2] = { "name": "3.Actions", "action": [
-                { "name": "1.Classic Mode",   "action": [
-                    { "name": "Cancel", "action": go_up},
-                    { "name": "Confirm", "action": switcher_dispatcher},
-                    ]
-                },
-                { "name": "2.Reboot",   "action": [
-                    { "name": "Cancel", "action": go_up},
-                    { "name": "Confirm", "action": reboot},
-                    ]
-                },
-            ]
-          }
-    
-    menu.pop(3)
-'''
 
 # Set up handlers to process key presses
 def receive_signal(signum, stack):
@@ -2058,7 +1974,12 @@ def receive_signal(signum, stack):
     global screen_cleared
     global sig_fired
     global start_up
+    global disable_keys
 
+    if disable_keys:
+        # someone disabled the front panel keys as they don't want to be interrupted
+        return
+    
     if (sig_fired):
         # signal handler already in progress, ignore this one
         return
