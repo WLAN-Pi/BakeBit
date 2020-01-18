@@ -174,6 +174,7 @@ lldpneigh_file = '/tmp/lldpneigh.txt'
 cdpneigh_file = '/tmp/cdpneigh.txt'
 ipconfig_file = '/home/wlanpi/NanoHatOLED/BakeBit/Software/Python/scripts/networkinfo/ipconfig.sh 2>/dev/null'
 reachability_file = '/home/wlanpi/NanoHatOLED/BakeBit/Software/Python/scripts/networkinfo/reachability.sh'
+publicip_cmd = '/home/wlanpi/NanoHatOLED/BakeBit/Software/Python/scripts/networkinfo/publicip.sh'
 
 # Linux programs
 ifconfig_file = '/sbin/ifconfig'
@@ -1229,6 +1230,84 @@ def show_wpa_passphrase():
 
     display_simple_table(choppedoutput, back_button_req=1, title='--WPA passphrase--')
 
+
+def show_speedtest():
+    '''
+    Run speedtest.net speed test and format output to fit the OLED screen
+    '''
+    global display_state
+
+    display_dialog_msg('Running Speedtest...', back_button_req=1)
+
+    speedtest_info = []
+    speedtest_cmd = "speedtest | egrep -w \"Testing from|Download|Upload\" | sed 's/Testing from /My IP: /g; s/\.\.\.//g; s/Download/D/g; s/Upload/U/g; s/(//g; s/)//g; s/bit\/s/bps/g'"
+
+    try:
+        speedtest_output = subprocess.check_output(speedtest_cmd, shell=True)
+        speedtest_info = speedtest_output.split('\n')
+
+    except Exception as ex:
+        error_descr = "Speedtest error"
+        error= [ "Err: Speedtest error" ]
+        display_simple_table(error, back_button_req=1)
+        return
+
+    if len(speedtest_info) == 0:
+        speedtest_info.append("No output sorry")
+
+    # chop down output to fit up to 2 lines on display
+    choppedoutput = []
+
+    for n in speedtest_info:
+        choppedoutput.append(n[0:20])
+        if len(n) > 20:
+            choppedoutput.append(n[20:40])
+
+    # final check no-one pressed a button before we render page
+    if display_state == 'menu':
+        return
+
+    display_simple_table(choppedoutput, back_button_req=1, title='--Speedtest--')
+    time.sleep(300)
+
+
+def show_publicip():
+    '''
+    Shows public IP address and related details, works with any interface with internet connectivity
+    '''
+    global display_state
+
+    publicip_info = []
+
+    try:
+            publicip_output = subprocess.check_output(publicip_cmd, shell=True)
+            publicip_info = publicip_output.split('\n')
+
+    except Exception as ex:
+        error_descr = "Public IP Error"
+        error= [ "Err: Public IP" ]
+        display_simple_table(error, back_button_req=1)
+        return
+
+    if len(publicip_info) == 0:
+        publicip_info.append("No output sorry")
+
+    # chop down output to fit up to 2 lines on display
+    choppedoutput = []
+
+    for n in publicip_info:
+        choppedoutput.append(n[0:20])
+        if len(n) > 20:
+            choppedoutput.append(n[20:40])
+
+    # final check no-one pressed a button before we render page
+    if display_state == 'menu':
+        return
+
+    display_simple_table(choppedoutput, back_button_req=1, title='--Public IP Address--')
+    time.sleep(10)
+
+
 def show_menu_ver():
 
     global __version__
@@ -1778,10 +1857,12 @@ menu = [
             { "name": "Eth0 VLAN", "action": show_vlan},
             { "name": "LLDP Neighbour", "action": show_lldp_neighbour},
             { "name": "CDP Neighbour", "action": show_cdp_neighbour},
+            { "name": "Public IP Address", "action": show_publicip},
         ]
       },
       { "name": "Utils", "action": [
             { "name": "Reachability", "action": show_reachability},
+            { "name": "Speedtest", "action": show_speedtest},
             { "name": "WPA Passphrase", "action": show_wpa_passphrase},
             { "name": "USB Devices", "action": show_usb},
             { "name": "UFW Ports", "action": show_ufw},
