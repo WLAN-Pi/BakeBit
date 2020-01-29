@@ -1248,7 +1248,7 @@ def show_speedtest():
     display_dialog_msg('Running Speedtest. Please wait.', back_button_req=0)
 
     speedtest_info = []
-    speedtest_cmd = "speedtest | egrep -w \"Testing from|Download|Upload\" | sed 's/Testing from /My IP: /g; s/\.\.\.//g; s/Download/D/g; s/Upload/U/g; s/(//g; s/)//g; s/bit\/s/bps/g'"
+    speedtest_cmd = "speedtest | egrep -w \"Testing from|Download|Upload\" | sed -r 's/Testing from.*?\(/My IP: /g; s/\)\.\.\.//g; s/Download/D/g; s/Upload/U/g; s/bit\/s/bps/g'"
 
     try:
         speedtest_output = subprocess.check_output(speedtest_cmd, shell=True)
@@ -1873,7 +1873,11 @@ menu = [
       },
       { "name": "Utils", "action": [
             { "name": "Reachability", "action": show_reachability},
-            { "name": "Speedtest", "action": show_speedtest},
+            { "name": "Speedtest", "action": [
+                { "name": "Back", "action": go_up},
+                { "name": "Start Test", "action": show_speedtest},
+            ]   
+            },
             { "name": "WPA Passphrase", "action": show_wpa_passphrase},
             { "name": "USB Devices", "action": show_usb},
             { "name": "UFW Ports", "action": show_ufw},
