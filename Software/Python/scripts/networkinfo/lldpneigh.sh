@@ -24,10 +24,10 @@ sudo "$DIRECTORY"/lldpcleanup.sh
 
 logger "networkinfo script: looking for an LLDP neighbour"
 
-#Run packet capture for up to 31 seconds or stop after we have got the right packets
+#Run packet capture for up to 61 seconds or stop after we have got the right packets
 TIMETOSTOP=0
 while [ "$TIMETOSTOP" == 0 ]; do
-    timeout 31 sudo tcpdump -vv -s 1500 -c 1 'ether[12:2]=0x88cc' -Q in > "$CAPTUREFILE"
+    timeout 61 sudo tcpdump -vv -s 1500 -c 1 'ether[12:2]=0x88cc' -Q in > "$CAPTUREFILE"
     TIMETOSTOP=$(cat "$CAPTUREFILE" | grep "LLDP")
 done
 
