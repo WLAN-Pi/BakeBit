@@ -782,7 +782,7 @@ def show_interfaces():
 
     # Extract interface info with a bit of regex magic
     interface_re = re.findall(
-        '^(\w+?)\: flags(.*?)RX packets', ifconfig_info, re.DOTALL | re.MULTILINE)
+        r'^(\w+?)\: flags(.*?)RX packets', ifconfig_info, re.DOTALL | re.MULTILINE)
     if interface_re is None:
         # Something broke is our regex - report an issue
         interfaces = ["Error: match error"]
@@ -802,7 +802,7 @@ def show_interfaces():
                 ip_address = "No IP address"
 
                 # do check if this is an interface in monitor mode
-                if (re.search("wlan\d", interface_name, re.MULTILINE)):
+                if (re.search(r"wlan\d", interface_name, re.MULTILINE)):
 
                     # fire up 'iw' for this interface (hmmm..is this a bit of an un-necessary ovehead?)
                     try:
@@ -845,7 +845,7 @@ def show_wlan_interfaces():
 
     # Extract interface info
     interface_re = re.findall(
-        '^(wlan\d)  ', ifconfig_info, re.DOTALL | re.MULTILINE)
+        r'^(wlan\d)  ', ifconfig_info, re.DOTALL | re.MULTILINE)
     if interface_re is None:
         interfaces = ["Error: match error"]
     else:
@@ -934,15 +934,16 @@ def show_usb():
     '''
     global display_state
 
-    lsusb = '/usr/bin/lsusb | /bin/grep -v Linux | /usr/bin/cut -d\  -f7-'
+    lsusb = r'/usr/bin/lsusb | /bin/grep -v Linux | /usr/bin/cut -d\  -f7-'
     lsusb_info = []
 
     try:
         lsusb_output = subprocess.check_output(lsusb, shell=True).decode()
         lsusb_info = lsusb_output.split('\n')
-    except Exception as ex:
-        error_descr = "Issue getting usb info using lsusb command"
-        interfaces = ["Err: lsusb error", str(ex)]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Issue getting usb info using lsusb command"
+        interfaces = ["Err: lsusb error", str(output)]
         display_simple_table(interfaces, back_button_req=1)
         return
 
@@ -1047,9 +1048,10 @@ def show_eth0_ipconfig():
             ipconfig_file, shell=True).decode()
         ipconfig_info = ipconfig_output.split('\n')
 
-    except Exception as ex:
-        error_descr = "Issue getting ipconfig"
-        ipconfigerror = ["Err: ipconfig command error"]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Issue getting ipconfig"
+        ipconfigerror = ["Err: ipconfig command error", output]
         display_simple_table(ipconfigerror, back_button_req=1)
         return
 
@@ -1093,9 +1095,10 @@ def show_lldp_neighbour():
                 neighbour_cmd, shell=True).decode()
             neighbour_info = neighbour_output.split('\n')
 
-        except Exception as ex:
-            error_descr = "Issue getting LLDP neighbour"
-            error = ["Err: Neighbour command error"]
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            #error_descr = "Issue getting LLDP neighbour"
+            error = ["Err: Neighbour command error", output]
             display_simple_table(error, back_button_req=1)
             return
 
@@ -1134,9 +1137,10 @@ def show_cdp_neighbour():
                 neighbour_cmd, shell=True).decode()
             neighbour_info = neighbour_output.split('\n')
 
-        except Exception as ex:
-            error_descr = "Issue getting LLDP neighbour"
-            error = ["Err: Neighbour command error"]
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            #error_descr = "Issue getting LLDP neighbour"
+            error = ["Err: Neighbour command error", output]
             display_simple_table(error, back_button_req=1)
             return
 
@@ -1173,9 +1177,10 @@ def show_reachability():
             reachability_cmd, shell=True).decode()
         reachability_info = reachability_output.split('\n')
 
-    except Exception as ex:
-        error_descr = "Issue getting reachability info"
-        error = ["Err: Reachability command error"]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Issue getting reachability info"
+        error = ["Err: Reachability command error", output]
         display_simple_table(error, back_button_req=1)
         return
 
@@ -1218,8 +1223,9 @@ def show_vlan():
                 vlan_cmd, shell=True).decode()
             vlan_info = vlan_output.split('\n')
 
-        except Exception as ex:
-            error_descr = "Issue getting VLAN info"
+        except subprocess.CalledProcessError as exc:
+            #output = exc.output.decode()
+            #error_descr = "Issue getting VLAN info"
             error = ["No VLAN found"]
             display_simple_table(error, back_button_req=1)
             return
@@ -1252,9 +1258,10 @@ def show_wpa_passphrase():
             swpc, shell=True).decode()
         wpa_passphrase.append(wpa_passphrase_output)
 
-    except Exception as ex:
-        error_descr = "Issue getting WPA passphrase"
-        swperror = ["Err: WPA passphrase"]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Issue getting WPA passphrase"
+        swperror = ["Err: WPA passphrase", output]
         display_simple_table(swperror, back_button_req=1)
         return
 
@@ -1294,9 +1301,10 @@ def show_speedtest():
             speedtest_cmd, shell=True).decode()
         speedtest_info = speedtest_output.split('\n')
 
-    except Exception as ex:
-        error_descr = "Speedtest error"
-        error = ["Err: Speedtest error"]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Speedtest error"
+        error = ["Err: Speedtest error", output]
         display_simple_table(error, back_button_req=1)
         return
 
@@ -1336,9 +1344,10 @@ def show_publicip():
             publicip_cmd, shell=True).decode()
         publicip_info = publicip_output.split('\n')
 
-    except Exception as ex:
-        error_descr = "Public IP Error"
-        error = ["Err: Public IP"]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Public IP Error"
+        error = ["Err: Public IP", output]
         display_simple_table(error, back_button_req=1)
         return
 
@@ -1453,7 +1462,8 @@ def switcher(resource_title, resource_switcher_file, mode_name):
     try:
         dialog_msg = subprocess.check_output("{} {}".format(
             resource_switcher_file, switch), shell=True).decode()  # reboots
-    except Exception as ex:
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
         dialog_msg = mode_name
 
     # We only get to this point if the switch has failed for some reason
@@ -1590,22 +1600,25 @@ def bettercap_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(bettercap_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Status failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Status failed! {}'.format(output)
 
     elif action == "start":
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(bettercap_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Start failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Start failed! {}'.format(output)
 
     elif action == "stop":
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(bettercap_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Stop failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Stop failed! {}'.format(output)
 
     display_dialog_msg(dialog_msg, back_button_req=1)
     display_state = 'page'
@@ -1648,8 +1661,9 @@ def profiler_ctl(action="status"):
             status_file_content = subprocess.check_output(
                 "{} {}".format(profiler_ctl_file, action), shell=True).decode()
             item_list = status_file_content.splitlines()
-        except Exception as ex:
-            item_list = ['Status failed!', str(ex)]
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            item_list = ['Status failed!', str(output)]
 
         display_simple_table(item_list, back_button_req=1,
                              title='Profiler Status')
@@ -1660,29 +1674,33 @@ def profiler_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(profiler_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Start failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Start failed! {}'.format(output)
 
     elif action == "start_no11r":
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(profiler_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Start failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Start failed! {}'.format(output)
 
     elif action == "stop":
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(profiler_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Stop failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Stop failed! {}'.format(output)
 
     elif action == "purge":
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(profiler_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Report purge failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Report purge failed! {}'.format(output)
 
     display_dialog_msg(dialog_msg, back_button_req=1)
     display_state = 'page'
@@ -1770,9 +1788,9 @@ def home_page():
             # eth_speed_info  = subprocess.check_output("{} eth0  | grep -i speed | cut -d' ' -f2".format(ethtool_file), shell=True)
             eth_info = subprocess.check_output(
                 '{} eth0 2>/dev/null'.format(ethtool_file), shell=True).decode()
-            speed_re = re.findall('Speed\: (.*\/s)', eth_info, re.MULTILINE)
-            duplex_re = re.findall('Duplex\: (.*)', eth_info, re.MULTILINE)
-            link_re = re.findall('Link detected\: (.*)',
+            speed_re = re.findall(r'Speed\: (.*\/s)', eth_info, re.MULTILINE)
+            duplex_re = re.findall(r'Duplex\: (.*)', eth_info, re.MULTILINE)
+            link_re = re.findall(r'Link detected\: (.*)',
                                  eth_info, re.MULTILINE)
 
             if (speed_re is None) or (duplex_re is None) or (link_re is None):
@@ -1826,9 +1844,10 @@ def wifi_client_count():
     try:
         client_count = subprocess.check_output(wccc, shell=True).decode()
 
-    except Exception as ex:
-        error_descr = "Issue getting number of  Wi-Fi clients"
-        wccerror = ["Err: Wi-Fi client count", wcerror, str(ex)]
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        #error_descr = "Issue getting number of  Wi-Fi clients"
+        wccerror = ["Err: Wi-Fi client count", str(output)]
         display_simple_table(wccerror, back_button_req=1)
         return
 
