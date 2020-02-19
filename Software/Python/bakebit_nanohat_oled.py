@@ -1530,15 +1530,17 @@ def kismet_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(kismet_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Status failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Status failed! {}'.format(output)
 
     elif action == "start":
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(kismet_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Start failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode():
+            dialog_msg = 'Start failed! {}'.format(output)
 
     elif action == "stop":
         try:
