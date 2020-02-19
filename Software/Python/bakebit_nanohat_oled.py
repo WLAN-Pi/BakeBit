@@ -1670,7 +1670,7 @@ def profiler_ctl(action="status"):
     elif action == "stop":
         try:
             dialog_msg = subprocess.check_output(
-                "{} {}".format(profiler_ctl_file, action), shell=True)
+                "{} {}".format(profiler_ctl_file, action), shell=True).decode()
         except Exception as ex:
             dialog_msg = 'Stop failed! {}'.format(ex)
 
