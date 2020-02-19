@@ -9,6 +9,7 @@
 #
 # v0.01 - 31st July 2019 - initial version
 # v0.02 - 1st Aug 2019   - fixed path issue in version info
+# TODO: Check for wlan interface before starting
 
 set -e
 
@@ -33,7 +34,14 @@ kismet_start () {
     echo "Kismet is running."
     return
   fi
-  
+
+  # Check if wlan0 available before we start changing things 
+  WLAN_IF=`ip a | grep wlan0` || true
+  if  [ -z "$WLAN_IF" ]; then
+    echo "No WLAN Interface"
+    return
+  fi
+   
   # Launch Kismet as background process (as the wlanpi user)
   # (Output sent to /dev/null so that interactive process returns and
   # doesn't hang calling script)
