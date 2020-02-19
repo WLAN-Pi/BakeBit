@@ -2,12 +2,12 @@
 
 '''
 
-This script loosely based on the original bakebit_nanonhat_oled.py provided 
+This script loosely based on the original bakebit_nanonhat_oled.py provided
 by Friendlyarm. It has been updated to support a scalable menu structure and
-a number of additional features to support the WLANPi initiative. 
+a number of additional features to support the WLANPi initiative.
 
 History:
- 
+
  0.03 - Added Switch classic/rconsole mode and USB interface listing (28/06/19)
  0.04 - Added button labels & menu scrolling (28/06/19)
  0.05 - Added check for rconsole installation
@@ -15,10 +15,10 @@ History:
         Added clear_display() function
         Added standard display dialogue function (29/06/19)
  0.06 - Added simple table fuction & refactored several functions to use it
-        Updated nav buttons to have optional new label 
+        Updated nav buttons to have optional new label
         Added menu verion display (30/06/19)
  0.07 - Added confirmation options to restart option menu selections (01/07/19)
- 0.08 - Added check for interfaces in monitor mode 
+ 0.08 - Added check for interfaces in monitor mode
         Added scrolling in simple tables (02/07/2019)
  0.09 - Added paged tables and WLAN interface detail option
  0.10 - Re-arranged menu structure to give network pages own area
@@ -27,11 +27,11 @@ History:
         Added display_list_as_paged_table() as alternative to simple table
         page as provide better scrolling experience (04/07/19)
  0.12 - Replaced 'is_menu_shown' and 'table_displayed' with single 'display state'
-        variable 
+        variable
         Added timezone to date page (06/07/19)
  0.13   Added early screen lock to show_summary() as causes some display issues
         due to length of time external commands take to execute (07/06/19)
- 0.14   Added checks in dispatchers that run external commands to see if 
+ 0.14   Added checks in dispatchers that run external commands to see if
         a button has been pressed before rendering page (08/07/19)
  0.15   Change "wconsole" to "Wi-Fi Console" mode (09/07/19)
  0.16   Added home page on boot-up.
@@ -42,8 +42,8 @@ History:
         Added Wi-Fi hotspot mode
         Added mode indicator on home page (26th Jul 2019)
  0.18   Added exit to home page option from top of menu (27th Jul 2019)
- 0.19   Added additional menu items to support start/stop/status of kismet (30th Jul 2019)  
- 0.20   Added bettercap web-ui support 
+ 0.19   Added additional menu items to support start/stop/status of kismet (30th Jul 2019)
+ 0.20   Added bettercap web-ui support
         Moved kismet and bettercap ctl scripts to common dir structure under
         /home/wlanpi/nanohat-oled-scripts (1st Aug 2019)
  0.21   Added profiler start/stop via front panel menu & status info.
@@ -52,15 +52,15 @@ History:
         home page(3rd Aug 2019)
  0.23   Added LLDP & eth0 updates submitted by Jiri Brejcha (15th Sep 2019)
  0.24   Added usb0 as default to disply when eth0 down (16th Nov 2019)
- 0.25   Added new CDP menu item, new CDP script and updated LLDP features by Jiri Brejcha (26th Nov 2019) 
+ 0.25   Added new CDP menu item, new CDP script and updated LLDP features by Jiri Brejcha (26th Nov 2019)
  0.26   DNS servers are now shown in ipconfig menu, DHCP server info is now shown correctly and only if eth0 is up, cleaned up networkinfo code in bakebit menu file by Jiri (29th Nov 2019)
- 0.27   Added Wiperf support (10th Dec 2019 - Nigel)   
- 0.28   Added reachability display - Jiri Brejcha (17th Dec 2019) 
+ 0.27   Added Wiperf support (10th Dec 2019 - Nigel)
+ 0.28   Added reachability display - Jiri Brejcha (17th Dec 2019)
  0.29   Re-ordered menu structure & removed menu item numbers (Nigel 18/12/2019)
  0.30   Added shutdown and reboot dialog images (Nigel 22/12/2019)
  0.31   Added main loop error handling improvement and reboot image fix (Nigel 23/12/2019)
  0.32   Minor menu updates to network info menu & tests now run when no def gw (Jiri 26/12/2019)
- 0.33   Secondary addr on USB causing 2 IP addr on home page - added head command to fix (Nigel 26/12/2019) 
+ 0.33   Secondary addr on USB causing 2 IP addr on home page - added head command to fix (Nigel 26/12/2019)
  0.34   Speedtest added by Jiri & added disable_keys global var to ignore key presses when required. Also tidied up lots of syntax issues reported by pylint & removed old menu code.
  0.35   Converted to python3
 
@@ -271,8 +271,8 @@ def clear_display():
 
 def display_simple_table(item_list, back_button_req=0, title='', font="small"):
     '''
-    This function takes a list and paints each entry as a line on a 
-    page. It also displays appropriate up/down scroll buttons if the 
+    This function takes a list and paints each entry as a line on a
+    page. It also displays appropriate up/down scroll buttons if the
     entries passed exceed a page length (one line at a time)
     '''
 
@@ -375,7 +375,7 @@ def display_dialog_msg(msg, back_button_req=0, wrap_limit=17, font="medium"):
 
 def display_paged_table(table_data, back_button_req=0):
     '''
-    This function takes several pages of information and displays on the 
+    This function takes several pages of information and displays on the
     display with appropriate pg up/pg down buttons
 
     table data is in format:
@@ -387,7 +387,7 @@ def display_paged_table(table_data, back_button_req=0):
                 ['Page 2 line 1', Page 2 line 2, 'Page 2 line 3', 'Page 2 line 4'],
                 ['Page 3 line 1', Page 3 line 2, 'Page 3 line 3', 'Page 3 line 4'],
                 ...etc.
-        ]    
+        ]
     }
     '''
 
@@ -475,7 +475,7 @@ def display_paged_table(table_data, back_button_req=0):
 def display_list_as_paged_table(item_list, back_button_req=0, title=''):
     '''
     This function builds on display_paged_table() and creates a paged display
-    from a simple list of results. This provides a better experience that the 
+    from a simple list of results. This provides a better experience that the
     simple line-by-line scrolling provided in display_simple_table()
 
     See display_paged_table() for required data structure
@@ -662,7 +662,7 @@ def draw_page():
 
 
 def show_summary():
-    ''' 
+    '''
     Summary page - taken from original bakebit script
     '''
 
@@ -728,7 +728,7 @@ def show_summary():
 
 
 def show_date():
-    ''' 
+    '''
     Date page - taken from original bakebit script & modified to add TZ
 
     '''
@@ -1544,8 +1544,9 @@ def kismet_ctl(action="status"):
         try:
             dialog_msg = subprocess.check_output(
                 "{} {}".format(kismet_ctl_file, action), shell=True).decode()
-        except Exception as ex:
-            dialog_msg = 'Stop failed! {}'.format(ex)
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            dialog_msg = 'Stop failed! {}'.format(output)
 
     display_dialog_msg(dialog_msg, back_button_req=1)
     display_state = 'page'
@@ -1764,7 +1765,7 @@ def home_page():
 
         # get Ethernet port info (...for Jerry)
         try:
-            #eth_speed_info  = subprocess.check_output("{} eth0  | grep -i speed | cut -d' ' -f2".format(ethtool_file), shell=True)
+            # eth_speed_info  = subprocess.check_output("{} eth0  | grep -i speed | cut -d' ' -f2".format(ethtool_file), shell=True)
             eth_info = subprocess.check_output(
                 '{} eth0 2>/dev/null'.format(ethtool_file), shell=True).decode()
             speed_re = re.findall('Speed\: (.*\/s)', eth_info, re.MULTILINE)
