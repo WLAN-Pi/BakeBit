@@ -1293,8 +1293,6 @@ def show_speedtest():
     global speedtest_status
     global speedtest_result_text
 
-    print(display_state)
-
     # Has speedtest been run already?
     if speedtest_status == False:
 
