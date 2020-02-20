@@ -154,6 +154,8 @@ result_cache = False          # used to cache results when paging info
 display_state = 'page'        # current display state: 'page' or 'menu'
 start_up = True               # True if in initial (home page) start-up state
 disable_keys = False          # Set to true when need to ignore key presses
+speedtest_status = False      # Indicates if speedtest has run or is in progress
+speedtest_result_text = ''    # tablulated speedtest result data
 
 #######################################
 # Initialize file variables
@@ -1284,51 +1286,57 @@ def show_wpa_passphrase():
 def show_speedtest():
     '''
     Run speedtest.net speed test and format output to fit the OLED screen
+    ( *** Note that speedtest_status set back to False in menu_right() *** )
     '''
     global display_state
     global disable_keys
+    global speedtest_status
+    global speedtest_result_text
 
-    # ignore any more key presses as this could cause us issues
-    disable_keys = True
+    print(display_state)
 
-    display_dialog_msg('Running Speedtest. Please wait.', back_button_req=0)
+    # Has speedtest been run already?
+    if speedtest_status == False:
 
-    speedtest_info = []
-    speedtest_cmd = "speedtest | egrep -w \"Testing from|Download|Upload\" | sed -r 's/Testing from.*?\(/My IP: /g; s/\)\.\.\.//g; s/Download/D/g; s/Upload/U/g; s/bit\/s/bps/g'"
+        # ignore any more key presses as this could cause us issues
+        disable_keys = True
 
-    try:
-        speedtest_output = subprocess.check_output(
-            speedtest_cmd, shell=True).decode()
-        speedtest_info = speedtest_output.split('\n')
+        display_dialog_msg(
+            'Running Speedtest. Please wait.', back_button_req=0)
 
-    except subprocess.CalledProcessError as exc:
-        output = exc.output.decode()
-        #error_descr = "Speedtest error"
-        error = ["Err: Speedtest error", output]
-        display_simple_table(error, back_button_req=1)
-        return
+        speedtest_info = []
+        speedtest_cmd = "speedtest | egrep -w \"Testing from|Download|Upload\" | sed -r 's/Testing from.*?\(/My IP: /g; s/\)\.\.\.//g; s/Download/D/g; s/Upload/U/g; s/bit\/s/bps/g'"
 
-    if len(speedtest_info) == 0:
-        speedtest_info.append("No output sorry")
+        try:
+            speedtest_output = subprocess.check_output(
+                speedtest_cmd, shell=True).decode()
+            speedtest_info = speedtest_output.split('\n')
 
-    # chop down output to fit up to 2 lines on display
-    choppedoutput = []
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            #error_descr = "Speedtest error"
+            error = ["Err: Speedtest error", output]
+            display_simple_table(error, back_button_req=1)
+            return
 
-    for n in speedtest_info:
-        choppedoutput.append(n[0:20])
-        if len(n) > 20:
-            choppedoutput.append(n[20:40])
+        if len(speedtest_info) == 0:
+            speedtest_info.append("No output sorry")
 
-    # final check no-one pressed a button before we render page
-    if display_state == 'menu':
-        return
+        # chop down output to fit up to 2 lines on display
+        speedtest_result_text = []
+
+        for n in speedtest_info:
+            speedtest_result_text.append(n[0:20])
+            if len(n) > 20:
+                speedtest_result_text.append(n[20:40])
+
+        speedtest_status = True
 
     # re-enable front panel keys
     disable_keys = False
 
-    display_simple_table(choppedoutput, back_button_req=1,
+    display_simple_table(speedtest_result_text, back_button_req=1,
                          title='--Speedtest--')
-    time.sleep(300)
 
 
 def show_publicip():
@@ -1886,6 +1894,10 @@ def menu_right():
     global option_selected
     global current_scroll_selection
     global display_state
+    global speedtest_status
+
+    # make sure we know speedtest is done
+    speedtest_status = False
 
     # If we are in a table, scroll up (unless at top of list)
     if display_state == 'page':
